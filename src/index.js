@@ -33,17 +33,10 @@ for (let rule of Object.keys(originalRules)) {
  * content. If it's a function, it'll use that to get the JSX it should render for that token.
  */
 const rules = {
-  blockquote: 'blockquote',
-
   heading: (token, content) => {
     const tag = 'h' + token.hLevel;
     return React.createElement(tag, null, ...content);
   },
-
-  bullet_list: 'ul',
-  list_item: 'li',
-  ordered_list: 'ol',
-  paragraph: 'p',
 
   link: (token, content) => {
     const title = token.title || null;
@@ -64,6 +57,13 @@ const rules = {
       <img title={title} alt={alt} src={src} />
     );
   },
+
+  paragraph: 'p',
+  blockquote: 'blockquote',
+
+  bullet_list: 'ul',
+  ordered_list: 'ol',
+  list_item: 'li',
 
   table: 'table',
   thead: 'thead',
