@@ -1,3 +1,5 @@
+/* global it, describe, beforeEach */
+
 import expect from 'expect';
 
 import Markdown from 'remarkable';
@@ -35,7 +37,7 @@ describe('remarkableJsx', () => {
 
     const rendered = React.renderToStaticMarkup(<span>{result}</span>);
     expect(rendered).toBe('<span><p>foo</p><p>bar</p></span>');
-  }),
+  });
 
   it('transforms ems/strongs', () => {
     const source = '*foo* **bar** _baz_';
@@ -47,11 +49,20 @@ describe('remarkableJsx', () => {
   });
 
   it('transforms links', () => {
-    const source ='hello [world](http://google.com)';
+    const source = 'hello [world](http://google.com)';
 
     const result = md.render(source);
 
     const rendered = React.renderToStaticMarkup(<span>{result}</span>);
     expect(rendered).toBe('<span><p>hello <a href="http://google.com">world</a></p></span>');
+  });
+
+  it('transforms images', () => {
+    const source = `![a kitty](/path/to/kitty.jpg)`;
+
+    const result = md.render(source);
+
+    const rendered = React.renderToStaticMarkup(<span>{result}</span>);
+    expect(rendered).toBe('<span><p><img alt="a kitty" src="/path/to/kitty.jpg"></p></span>');
   });
 });

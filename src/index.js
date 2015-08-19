@@ -55,8 +55,15 @@ const rules = {
     );
   },
 
-  // TODO: this is complicated and not a block so idk what it even looks like D:
-  image: 'img',
+  image: (token) => {
+    const src = token.src || null;
+    const title = token.title || null;
+    const alt = token.alt || null;
+
+    return (
+      <img title={title} alt={alt} src={src} />
+    );
+  },
 
   table: 'table',
   thead: 'thead',
@@ -79,7 +86,7 @@ const rules = {
 };
 
 
-function wrap(token, content) {
+function renderRule(token, content) {
   const type = token.type.replace('_open', '');
   const rule = rules[type];
 
@@ -108,7 +115,7 @@ function renderTokens([cur, ...rest], state, acc) {
 
     let parsed;
     [parsed, rest] = renderTokens(rest, state, []);
-    const jsx = wrap(cur, parsed);
+    const jsx = renderRule(cur, parsed);
     acc.push(jsx);
 
     state.stack.pop();
@@ -129,9 +136,12 @@ function renderTokens([cur, ...rest], state, acc) {
     acc.push(cur.content);
 
   } else {
-    // Some example tokens we don't handle yet: <img />, <br />...
-    // We should probably use a rule here
-    throw new Error(`Encountered unhandled token type ${cur.type}`);
+    // Use a rule for a token if it exists
+    if (rules[cur.type]) {
+      acc.push(renderRule(cur));
+    } else {
+      throw new Error(`Encountered unhandled token type ${cur.type}`);
+    }
   }
 
   return renderTokens(rest, state, acc);
