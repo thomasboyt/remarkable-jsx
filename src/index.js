@@ -1,8 +1,19 @@
-import util from 'util';
 import React from 'react';
 import {default as originalRules} from 'remarkable/lib/rules';
 
+
+/*
+ * This is a map of token types that open blocks to token types that close blocks,
+ * always of the form `{name_open: name_close}`
+ *
+ * It's used to check whether a token type opens a block, as well as to quickly get the
+ * close type name.
+ *
+ * The map is computed from the token types in Remarkable's list of rules, since it was faster
+ * than copy-pasting all the open/close types :V
+ */
 let blockTokenOpenCloseMap = {};
+
 const OPEN_TOKEN_RE = /(.*)_open$/;
 
 for (let rule of Object.keys(originalRules)) {
@@ -14,6 +25,13 @@ for (let rule of Object.keys(originalRules)) {
   }
 }
 
+
+/*
+ * These rules determine what the renderer should do for each token type.
+ *
+ * If rule's value is a string, it'll just make a tag with that string with the token's
+ * content. If it's a function, it'll use that to get the JSX it should render for that token.
+ */
 const rules = {
   blockquote: 'blockquote',
 
@@ -60,6 +78,7 @@ const rules = {
   dd: 'dd'
 };
 
+
 function wrap(token, content) {
   const type = token.type.replace('_open', '');
   const rule = rules[type];
@@ -72,11 +91,9 @@ function wrap(token, content) {
 }
 
 /**
- * Parse tree:
- * [para_open, inline, para_close]
+ * This is the core rendering function, which reduces over a list of tokens.
  *
- * should turn into:
- * [<p>{inline}</p>]
+ * It's really ugly and probably doesn't work in a lot of cases yet!
  */
 function renderTokens([cur, ...rest], state, acc) {
   if (!cur) {
@@ -85,11 +102,11 @@ function renderTokens([cur, ...rest], state, acc) {
   }
 
   if (cur.type in blockTokenOpenCloseMap) {
-    let parsed;
-
-    // New open tag, push next close tag into stack
+    // We got a new open block tag, so we render the full block and push it into the
+    // accumulator
     state.stack.push(blockTokenOpenCloseMap[cur.type]);
 
+    let parsed;
     [parsed, rest] = renderTokens(rest, state, []);
     const jsx = wrap(cur, parsed);
     acc.push(jsx);
@@ -97,29 +114,40 @@ function renderTokens([cur, ...rest], state, acc) {
     state.stack.pop();
 
   } else if (cur.type === state.stack.slice(-1)[0]) {
+    // The end of the current block. We return all of the tokens we've accumulated, which
+    // represent the block.
     return [acc, rest];
 
   } else if (cur.type === 'inline') {
-    let [parsed, _] = renderTokens(cur.children, state, []);
+    // An "inline" token in Remarkable currently is just a list of tokens inside a block-level
+    // element (e.g. a paragraph).
+    let [parsed] = renderTokens(cur.children, state, []);
     acc.push(parsed);
 
-  } else {
+  } else if (cur.type === 'text') {
+    // A text token is just pushed in with the rest of the tokens
     acc.push(cur.content);
+
+  } else {
+    // Some example tokens we don't handle yet: <img />, <br />...
+    // We should probably use a rule here
+    throw new Error(`Encountered unhandled token type ${cur.type}`);
   }
 
   return renderTokens(rest, state, acc);
 }
 
-function jsxRender(tokens, options, env) {
+function jsxRender(tokens/*, options, env*/) {
   let state = {
     stack: []
   };
 
-  const [result, rest] = renderTokens(tokens, state, []);
+  const [result] = renderTokens(tokens, state, []);
 
   return result;
 }
 
+// Remarkable's plugin architecture is just a specified way to monkey-patch a Remarkable instance
 export default function(md) {
   md.renderer.render = jsxRender.bind(md.renderer);
 }
