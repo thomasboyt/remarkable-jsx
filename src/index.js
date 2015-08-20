@@ -31,6 +31,16 @@ for (let rule of Object.keys(originalRules)) {
  *
  * If rule's value is a string, it'll just make a tag with that string with the token's
  * content. If it's a function, it'll use that to get the JSX it should render for that token.
+ *
+ * TODO:
+ *   - `code`: inline *and* block code snippets
+ *     https://github.com/jonschlinkert/remarkable/blob/dev/lib/rules.js#L34-L39
+ *   - `fence`: fenced code blocks
+ *     https://github.com/jonschlinkert/remarkable/blob/dev/lib/rules.js#L45-L83
+ *   - `htmlblock`, `htmltag`
+ *     https://github.com/jonschlinkert/remarkable/blob/dev/lib/rules.js#L311-L316
+ *   - footnotes, I guess? they look super complicated
+ *     https://github.com/jonschlinkert/remarkable/blob/dev/lib/rules.js#L330
  */
 const rules = {
   heading: (token, content) => {
@@ -58,6 +68,16 @@ const rules = {
     );
   },
 
+  abbr: (token, content) => {
+    const title = token.title || null;
+
+    return (
+      <abbr title={title}>
+        {content}
+      </abbr>
+    );
+  },
+
   paragraph: 'p',
   blockquote: 'blockquote',
 
@@ -82,7 +102,11 @@ const rules = {
 
   dl: 'dl',
   dt: 'dt',
-  dd: 'dd'
+  dd: 'dd',
+
+  hr: 'hr',
+  hardbreak: 'br',
+  softbreak: 'br'
 };
 
 
